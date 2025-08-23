@@ -1,0 +1,74 @@
+generator client {
+    provider = "prisma-client-js"
+    binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
+    output = "/home/ubuntu/capacita_crm/app/node_modules/.prisma/client"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  role      String   @default("student") // "admin" or "student"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Student {
+  id               BigInt       @id @default(autoincrement())
+  email            String       @unique
+  name             String?      // Nome completo
+  phone            String?      // Telefone (WhatsApp)
+  sex              String?      // Sexo
+  birthDate        String?      // Data de nascimento
+  city             String?      // Cidade
+  fullAddress      String?      // Endereço completo
+  cep              String?      // CEP
+  addressCompleted Boolean      @default(false) // Se o endereço foi preenchido
+  howFoundUs       String?      // Como soube dessa oportunidade?
+  studyStyle       String?      // Como prefere estudar?
+  timestamp        DateTime?    @db.Timestamptz(6) // Carimbo de data/hora da planilha
+  createdAt        DateTime     @default(now()) @db.Timestamptz(6)
+  updatedAt        DateTime     @default(now()) @updatedAt @db.Timestamptz(6)
+  Attendance       Attendance[]
+
+  @@map("students")
+}
+
+model LiveEvent {
+  id          BigInt       @id @default(autoincrement())
+  slug        String       @unique
+  title       String
+  youtubeId   String
+  startsAt    DateTime     @db.Timestamptz(6)
+  endsAt      DateTime     @db.Timestamptz(6)
+  durationMin Int
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime     @default(now()) @updatedAt @db.Timestamptz(6)
+  Attendance  Attendance[]
+
+  @@map("live_events")
+}
+
+model Attendance {
+  id          BigInt    @id @default(autoincrement())
+  studentId   BigInt
+  liveId      BigInt
+  joinedAt    DateTime  @default(now()) @db.Timestamptz(6)
+  lastPingAt  DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  watchedSec  Int       @default(0)
+  fullWatched Boolean   @default(false)
+
+  Student   Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  LiveEvent LiveEvent @relation(fields: [liveId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, liveId], map: "student_live_unique")
+  @@map("attendance")
+}
