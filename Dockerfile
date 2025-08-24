@@ -2,7 +2,7 @@
 FROM node:20-alpine AS base
 
 # Instalar dependências necessárias
-RUN apk add --no-cache libc6-compat
+RUN apk add --no-cache libc6-compat openssl
 
 WORKDIR /app
 
@@ -10,8 +10,8 @@ WORKDIR /app
 COPY package*.json ./
 COPY prisma ./prisma/
 
-# Instalar dependências
-RUN npm ci --only=production && npm cache clean --force
+# Instalar TODAS as dependências (incluindo dev para build)
+RUN npm ci
 
 # Gerar Prisma Client
 RUN npx prisma generate
@@ -21,6 +21,9 @@ COPY . .
 
 # Build da aplicação
 RUN npm run build
+
+# Limpar dependências de desenvolvimento após build
+RUN npm prune --production
 
 # Expor porta
 EXPOSE 3000
